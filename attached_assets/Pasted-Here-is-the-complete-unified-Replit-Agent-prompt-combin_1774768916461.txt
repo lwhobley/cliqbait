@@ -1,0 +1,323 @@
+Here is the complete, unified Replit Agent prompt combining all three parts:
+
+***
+
+## Complete Replit Agent Prompt
+
+```
+Build a full-stack luxury fashion e-commerce store styled after the Marc Jacobs website aesthetic. The design must feel editorial, high-fashion, and avant-garde — stark white backgrounds, bold oversized serif/sans-serif typography, full-bleed photography, minimal UI chrome, and deliberate use of negative space. Use React + TypeScript, Tailwind CSS, Framer Motion, Node.js/Express backend, and PostgreSQL for the database.
+
+---
+
+### DESIGN PHILOSOPHY (Follow This Throughout Every Page)
+- Color palette: Pure white (#FFFFFF) backgrounds, jet black (#000000) text and borders, occasional red (#FF0000) accent for sale tags or hover states — no gradients, no rounded corners anywhere on the site
+- Typography: Import `Playfair Display` for editorial headings; `Inter` at tight letter-spacing for all body and nav text; all caps nav labels
+- Layout: Brutalist grid — full bleed images, asymmetric layouts, hard edges, no drop shadows, no card borders
+- Interactions: Cursor changes to crosshair on product hover; underline-slide hover states on all links; all CTAs are rectangular with black border or solid black fill, zero border-radius
+- Images: Always full-width or oversized, never centered small thumbnails
+- Mobile: Stacked single column, same stark aesthetic preserved
+
+---
+
+### TECH STACK
+- Frontend: React + TypeScript + Tailwind CSS + Framer Motion
+- Backend: Node.js + Express
+- Database: PostgreSQL via Replit Database
+- Payments: Stripe Checkout Sessions + Webhooks
+- Fulfillment: Printful REST API (real-time product sync, pricing, order fulfillment)
+- WebGL/Shaders: Three.js + @react-three/fiber + OGL
+- Fonts: Google Fonts — Playfair Display + Inter
+
+Install dependencies:
+npm install three @react-three/fiber @react-three/drei ogl framer-motion
+
+Also load VFX-JS from CDN:
+<script type="module" src="https://unpkg.com/@vfx-js/core"></script>
+
+---
+
+### GLITCH MOTION AI BACKGROUND SYSTEM
+
+Create a reusable <GlitchBackground /> React component that renders behind all page content using `position: fixed; z-index: -1; inset: 0`. It accepts a `variant` prop:
+- "intro" — most intense, used on landing intro sequence
+- "hero" — subtle, used on storefront hero sections
+- "product" — minimal grain only
+- "cart" — off (white background only)
+
+**EFFECT 1 — Chromatic Aberration RGB Split (WebGL Shader via OGL)**
+On intro and hero sections, render a fullscreen WebGL canvas using OGL with a GLSL fragment shader that:
+- Splits R, G, B channels horizontally by different offsets animated via `uTime` uniform
+- R channel: +8px offset, B channel: −8px offset, G channel: no offset
+- Vertical scan line jitter: every 80–120ms randomly shift a horizontal band ±5px
+- Glitch fires in bursts: 200ms intense → 2s calm → repeat (randomized timing)
+
+Fragment shader:
+```glsl
+uniform sampler2D uTexture;
+uniform float uTime;
+uniform float uGlitchIntensity;
+varying vec2 vUv;
+void main() {
+  float offset = sin(uTime) * uGlitchIntensity * 0.01;
+  float r = texture2D(uTexture, vUv + vec2(offset, 0.0)).r;
+  float g = texture2D(uTexture, vUv).g;
+  float b = texture2D(uTexture, vUv - vec2(offset, 0.0)).b;
+  gl_FragColor = vec4(r, g, b, 1.0);
+}
+```
+
+**EFFECT 2 — Cursor-Reactive Fluid Gradient (Three.js + GLSL)**
+On hero and home sections, render a fullscreen Three.js PlaneGeometry with custom ShaderMaterial:
+- Tracks mouse via `mousemove` → `uMouse` vec2 uniform (normalized 0–1)
+- fbm (fractal Brownian motion) noise generates fluid distortion field in GLSL
+- Gradient stays monochromatic: pure black (#000000) to deep charcoal (#111111) — NEVER color
+- Cursor creates lens-distortion ripple: radius ~200px, strength 0.03
+- Mobile fallback: auto-panning slow wave using `uTime` only
+- Mouse lerp factor: 0.08 for smooth lag
+
+```javascript
+const uniforms = {
+  uTime: { value: 0 },
+  uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+  uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+};
+// useFrame: uniforms.uTime.value += 0.005
+// mousemove: lerp uMouse toward normalized cursor position
+```
+
+**EFFECT 3 — Film Grain Noise Overlay**
+Fullscreen `<canvas>` fixed overlay on ALL pages: `z-index: 9999, pointer-events: none, opacity: 0.04`:
+- requestAnimationFrame at 24fps filling canvas with randomized ImageData pixel noise
+- Product pages: reduce to opacity 0.025 so product images stay clean
+- pointer-events: none required throughout
+
+```javascript
+function renderGrain(canvas) {
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(canvas.width, canvas.height);
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const v = Math.random() * 255;
+    imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = v;
+    imageData.data[i+3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+```
+
+**EFFECT 4 — CSS Glitch Text Bursts**
+On brand name stamp and section headers scroll-into-view:
+- `::before` and `::after` pseudo-elements with `clip-path: inset()` create offset ghost copies in red (#FF0000) and cyan (#00FFFF)
+- `.is-glitching` CSS class toggled by Framer Motion `onAnimationStart`
+- Maximum glitch duration: 800ms — always resolves to clean readable black
+
+```css
+@keyframes glitchClip {
+  0%   { clip-path: inset(20% 0 50% 0); transform: translate(-4px, 0); }
+  25%  { clip-path: inset(60% 0 10% 0); transform: translate(4px, 2px); }
+  50%  { clip-path: inset(10% 0 70% 0); transform: translate(-2px, -2px); }
+  75%  { clip-path: inset(40% 0 30% 0); transform: translate(3px, 1px); }
+  100% { clip-path: inset(0% 0 0% 0);   transform: translate(0, 0); }
+}
+```
+
+**EFFECT 5 — Scan Line Sweep (Intro Only)**
+During product flash reel: a 2px white line `position: absolute` animates `top: -2px → 100vh` over 1.2s linear, looping infinitely at opacity 0.15. Pure CSS animation, no JS.
+
+**Performance Rules:**
+- All WebGL canvases: `alpha: false`, `antialias: false`
+- Pause all rAF loops on `visibilitychange` hidden
+- `prefers-reduced-motion`: disable all glitch/grain effects, fallback to static black
+- Throttle mousemove to 60fps via `lastTime` timestamp check
+- Mobile (< 768px): disable WebGL shaders entirely, keep only CSS grain at 0.02 opacity
+
+---
+
+### SITE-WIDE NAVIGATION
+- Fixed top bar, pure white background, 1px black bottom border
+- Left: Brand name — all-caps bold Playfair Display, 32px+
+- Center: NAV LINKS — SHOP, NEW ARRIVALS, COLLECTIONS, ABOUT — all caps, letter-spacing: 0.2em, animated underline slides in from left on hover
+- Right: Search icon (thin line), Cart bag icon with item count superscript
+- On scroll: border thickens to 2px
+- Mobile: hamburger → full-screen black overlay with large white nav items
+
+---
+
+### PAGE 1 — LANDING / ANIMATED INTRO SEQUENCE
+(First visit only — store in localStorage)
+
+**Phase 1 — Product Flash Reel (0–4s):**
+Fullscreen black screen. Product shots (t-shirts, hoodies, bags, accessories) flash in hard-cut rapid succession — each image holds for 300ms with NO crossfade, like a strobe editorial sequence. <GlitchBackground variant="intro" /> active. Scan line sweep overlay running.
+
+**Phase 2 — Brand Name Stamp (4–6s):**
+Final product image holds. Brand name STAMPS onto screen from above: Framer Motion `y: -100 → 0`, spring `ease: [0.16, 1, 0.3, 1]`. On stamp landing: trigger `.is-glitching` CSS class for 800ms glitch text burst in red/cyan. A thin horizontal SVG line draws across screen left-to-right using `stroke-dashoffset` animation over 600ms.
+
+**Phase 3 — Enter Store (6–8s):**
+"ENTER" text fades in below the line. Click (or auto-timeout): full-page vertical wipe downward reveals storefront. Skip button fixed top-right throughout.
+
+---
+
+### PAGE 2 — MAIN STOREFRONT (Home)
+<GlitchBackground variant="hero" /> active on hero section.
+
+**Hero:**
+- Full-viewport-height editorial lifestyle image, no text overlay initially
+- After 1.5s: brand name fades in over image — massive all-caps white Playfair Display, 10vw font size
+- Below hero: 1px black rule + single left-aligned body line: "NEW SEASON. NOW AVAILABLE."
+
+**Best Sellers:**
+- Header: "BEST SELLERS" — left-aligned, all-caps, 64px Playfair Display
+- Asymmetric 2-column grid: large hero product left spanning 2 rows, two smaller products stacked right
+- Hover: product name + price slide up from image bottom using Framer Motion `y: 40 → 0`, white text on semi-transparent black bar
+- Prices pulled real-time from Printful API
+- Staggered `fadeInUp` cards on scroll via Intersection Observer
+- "SHOP ALL →" link bottom-right
+
+**Collections Strip:**
+- Horizontal snap-scroll row, hidden scrollbar
+- Categories: T-SHIRTS, HOODIES, SWEATS, SHIRTS, PANTS, BAGS, ACCESSORIES
+- 400×400px square tiles with full-bleed image, category name bottom-left in all-caps white Helvetica
+
+**Editorial Feature Banner:**
+- Full-width black section, single large white headline, one product image — magazine spread style
+- CTA: rectangular white button, black text "SHOP THE LOOK"
+
+---
+
+### PAGE 3 — CATEGORY PAGES (`/shop/:category`)
+<GlitchBackground variant="product" /> (grain only).
+
+- Page header: category name in 96px all-caps Playfair Display, left-aligned; page counter top-right ("01 / T-SHIRTS")
+- Products: strict 3-col CSS Grid desktop, 2-col tablet, 1-col mobile
+- Each tile: no border, no shadow; full-bleed image; on hover second product angle crossfades in; name + price slides up in black text
+- Cursor: crosshair on hover
+- Filter row: left-aligned all-caps text buttons — PRICE ↑↓, NEWEST, A–Z — bold when active
+- Skeleton loaders: gray shimmer block same dimensions as tile (no spinner)
+- Products fetched from Printful API filtered by category tag
+
+Categories to build pages for:
+/shop/tshirts, /shop/hoodies, /shop/sweats, /shop/shirts, /shop/pants, /shop/bags, /shop/accessories
+
+---
+
+### PAGE 4 — PRODUCT DETAIL PAGE (`/product/:id`)
+<GlitchBackground variant="product" /> (grain only).
+
+- Two-column layout: LEFT 60vw image gallery (sticky), RIGHT product info (sticky scroll)
+- Left: large primary image, horizontal thumbnail filmstrip below; click thumbnail → crossfade swap; hover → scale 1.0 → 1.05 (400ms)
+- Right:
+  - Brand name small all-caps gray above product name
+  - Product name: 48px Playfair Display
+  - Price: live from Printful API per selected variant, 24px black
+  - Size selector: rectangular outlined boxes (0 border-radius); selected = black fill white text
+  - Color selector: filled square swatches; selected = thick black border
+  - Quantity: minimal +/− text buttons
+  - ADD TO BAG: full-width black rectangle, white all-caps, 0 border-radius; on click: Framer Motion `scaleY: 0.95` compress + release; top-center toast notification appears
+  - Description below fold, separated by thin rule
+  - "YOU MAY ALSO LIKE" — 4 product row same category
+- Mobile: sticky "ADD TO BAG" bar fixed bottom of screen
+
+---
+
+### CART DRAWER
+<GlitchBackground variant="cart" /> — NO effects, clean white only.
+
+- Slides in from right: Framer Motion `x: 100% → 0`, full viewport height, white bg, 2px left black border
+- Header: "YOUR BAG (n)" all-caps
+- Each item: square image left, name + size + color + price right, × remove link
+- Subtotal with thin rule above
+- "CHECKOUT" — full-width black rectangle button
+- "VIEW BAG" secondary text link below
+
+---
+
+### STRIPE CHECKOUT
+- Backend: `POST /api/create-checkout-session` — Stripe Checkout Session with cart line items; Printful variant IDs in metadata
+- Stripe appearance API: `theme: 'stripe'`, white background, black fonts, `borderRadius: '0px'`
+- Success: redirect `/order-confirmation` — large "ORDER CONFIRMED" heading, order number, estimated ship date from Printful
+- Cancel: redirect back to cart
+- Webhook `POST /api/webhook`: on `checkout.session.completed` → auto-submit order to Printful API with recipient + items
+
+---
+
+### PRINTFUL API SERVICE (`printfulService.ts`)
+- `GET /api/products` — all synced store products
+- `GET /api/products/:id` — single product + all variants + real-time pricing
+- `GET /api/products/category/:slug` — filter by category
+- `POST /api/orders` — create Printful fulfillment order (called by Stripe webhook) with: recipient (name, address from Stripe session), items (sync_variant_id + quantity)
+- Cache product listings in PostgreSQL for 60 minutes to reduce API calls
+- API key stored in Replit Secrets as PRINTFUL_API_KEY
+
+---
+
+### DATABASE SCHEMA
+```sql
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  printful_id INTEGER UNIQUE,
+  name TEXT,
+  category TEXT,
+  base_price NUMERIC,
+  image_url TEXT,
+  variants JSONB,
+  cached_at TIMESTAMP
+);
+
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  stripe_session_id TEXT,
+  printful_order_id TEXT,
+  customer_email TEXT,
+  status TEXT,
+  line_items JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+### ENVIRONMENT VARIABLES (Add to Replit Secrets)
+```
+PRINTFUL_API_KEY=your_printful_api_key
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+DATABASE_URL=your_replit_postgres_url
+```
+
+---
+
+### GLITCH EFFECTS BY PAGE SECTION
+- Intro flash reel: RGB split shader + scan line sweep + film grain (full intensity)
+- Brand name stamp: CSS glitch text burst 800ms red/cyan
+- Storefront hero: cursor-reactive fluid gradient + film grain
+- Category pages: film grain only (0.04 opacity)
+- Product detail: minimal grain (0.025 opacity)
+- Cart drawer: no effects, clean white
+
+---
+
+### ADDITIONAL SITE DETAILS
+- Toast notification system top-center: appears on add-to-bag, errors, confirmations
+- `/order-confirmation` page: animated checkmark (Framer Motion path draw), order summary, estimated Printful delivery date
+- 404 page: animated brand name glitch graphic
+- SEO: meta tags + og:image per product using Printful mockup URLs
+- Smooth scroll behavior site-wide
+- Dark mode: intro/hero sections are dark; product/cart pages are white — NO toggle needed
+- No rounded corners anywhere on the entire site
+
+---
+
+### BUILD ORDER
+1. Project setup + routing (React Router v6)
+2. GlitchBackground component system (all 5 effects)
+3. Printful API service + product fetching + PostgreSQL cache
+4. Landing intro animation sequence (phases 1–3)
+5. Main storefront — hero, best sellers, collections strip
+6. Category pages (/shop/:category)
+7. Product detail pages (/product/:id)
+8. Cart drawer + state management (Zustand or Context)
+9. Stripe checkout + webhook handler
+10. Printful order submission + order confirmation page
+```
+
+Sources

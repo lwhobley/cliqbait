@@ -1,0 +1,9 @@
+packages:
+  "framer-motion": "For complex intro sequences, page transitions, and smooth cart drawer animations"
+  "zustand": "For robust, simple global cart state management"
+
+notes:
+  - Using wouter for routing as requested
+  - Using Unsplash placeholder images with fashion/editorial keywords
+  - API hooks imported directly from @workspace/api-client-react generated client
+  - Implementing strict Playfair Display & Inter typography with pure black/white avant-garde styling

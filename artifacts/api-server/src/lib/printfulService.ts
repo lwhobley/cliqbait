@@ -33,7 +33,10 @@ async function printfulFetch(path: string): Promise<unknown> {
 
 function mapCategoryFromName(name: string): string {
   const lower = name.toLowerCase();
-  if (lower.includes("hoodie") || lower.includes("sweatshirt") && lower.includes("hood")) return "hoodies";
+  // CQ2 FIX: Added explicit parentheses to make operator precedence unambiguous.
+  // Previously `||` and `&&` precedence caused "sweatshirt" (without "hood") to fall
+  // through to the wrong category.
+  if (lower.includes("hoodie") || (lower.includes("sweatshirt") && lower.includes("hood"))) return "hoodies";
   if (lower.includes("sweat") || lower.includes("crewneck")) return "sweats";
   if (lower.includes("t-shirt") || lower.includes("tee") || lower.includes("t shirt")) return "tshirts";
   if (lower.includes("shirt") || lower.includes("button")) return "shirts";
@@ -72,25 +75,43 @@ export async function getAllProducts() {
       thumbnail_url: string;
     }>;
 
+    type PrintfulProductDetail = {
+      sync_product: { id: number; name: string; thumbnail_url: string };
+      sync_variants: Array<{
+        id: number;
+        name: string;
+        retail_price: string;
+        is_ignored: boolean;
+        files: Array<{ type: string; preview_url: string }>;
+        product: { image: string };
+        warehouse_product_variant?: {
+          options?: Array<{ id: string; value: string }>;
+        };
+      }>;
+    };
+
+    // PERF1 FIX: Fetch all product details in parallel instead of sequentially.
+    // Previously this loop made N+1 sequential HTTP calls (1 list + N detail fetches),
+    // taking ~1 second per product. Promise.allSettled fetches them all concurrently.
+    const detailResults = await Promise.allSettled(
+      syncProducts.map((sp) =>
+        printfulFetch(`/store/products/${sp.id}`) as Promise<PrintfulProductDetail>
+      )
+    );
+
     const products = [];
 
-    for (const sp of syncProducts) {
-      try {
-        const detail = await printfulFetch(`/store/products/${sp.id}`) as {
-          sync_product: { id: number; name: string; thumbnail_url: string };
-          sync_variants: Array<{
-            id: number;
-            name: string;
-            retail_price: string;
-            is_ignored: boolean;
-            files: Array<{ type: string; preview_url: string }>;
-            product: { image: string };
-            warehouse_product_variant?: {
-              options?: Array<{ id: string; value: string }>;
-            };
-          }>;
-        };
+    for (let i = 0; i < detailResults.length; i++) {
+      const result = detailResults[i];
+      const sp = syncProducts[i];
 
+      if (result.status === "rejected") {
+        logger.error({ err: result.reason, productId: sp.id }, "Failed to sync product");
+        continue;
+      }
+
+      try {
+        const detail = result.value;
         const syncProduct = detail.sync_product;
         const syncVariants = detail.sync_variants;
         const category = mapCategoryFromName(syncProduct.name);
@@ -155,7 +176,7 @@ export async function getAllProducts() {
           products.push(inserted);
         }
       } catch (err) {
-        logger.error({ err, productId: sp.id }, "Failed to sync product");
+        logger.error({ err, productId: sp.id }, "Failed to process product detail");
       }
     }
 

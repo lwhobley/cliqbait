@@ -1,14 +1,15 @@
-import { useRoute, Link } from 'wouter';
+import { useRoute, useSearch, Link } from 'wouter';
 import { useGetOrderBySession } from '@workspace/api-client-react';
 import { motion } from 'framer-motion';
 import { Check, Loader2 } from 'lucide-react';
 
 export function OrderConfirmation() {
   const [, params] = useRoute('/order-confirmation');
-  
-  // Extract session_id from URL query parameters
-  const searchParams = new URLSearchParams(window.location.search);
-  const sessionId = searchParams.get('session_id') || '';
+
+  // CQ5 FIX: Use Wouter's useSearch() instead of window.location.search.
+  // This works correctly in all rendering environments and is testable.
+  const search = useSearch();
+  const sessionId = new URLSearchParams(search).get('session_id') || '';
 
   const { data: order, isLoading, error } = useGetOrderBySession(sessionId);
 

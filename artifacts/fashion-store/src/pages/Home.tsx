@@ -5,11 +5,13 @@ import { ProductCard } from '@/components/ProductCard';
 import { motion } from 'framer-motion';
 
 
+// ARC1 FIX: slug must match the category values stored in the database
+// (set by mapCategoryFromName in printfulService.ts).
 const COLLECTIONS = [
-  { name: 'T-SHIRTS', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600' },
-  { name: 'HOODIES', image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600' },
-  { name: 'PANTS', image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600' },
-  { name: 'ACCESSORIES', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=600' },
+  { name: 'T-SHIRTS', slug: 'tshirts', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600' },
+  { name: 'HOODIES', slug: 'hoodies', image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600' },
+  { name: 'PANTS', slug: 'pants', image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600' },
+  { name: 'ACCESSORIES', slug: 'accessories', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=600' },
 ];
 
 export function Home() {
@@ -103,7 +105,7 @@ export function Home() {
           {COLLECTIONS.map((collection) => (
             <Link 
               key={collection.name} 
-              href={`/shop/${collection.name.toLowerCase()}`}
+              href={`/shop/${collection.slug}`}
               className="group relative flex-none w-[300px] h-[400px] md:w-[400px] md:h-[500px] snap-center overflow-hidden bg-black cursor-pointer"
             >
               <img 

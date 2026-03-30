@@ -39,7 +39,12 @@ router.post("/webhook", async (req: Request, res): Promise<void> => {
       return;
     }
   } else {
-    event = req.body as Stripe.Event;
+    // SEC2 FIX: Never process unverified webhook events.
+    // Without a webhook secret, any caller could forge a checkout.session.completed
+    // event and trigger free order fulfillment via Printful.
+    logger.error("STRIPE_WEBHOOK_SECRET is not configured; refusing to process unverified webhook");
+    res.status(400).json({ error: "Webhook secret not configured" });
+    return;
   }
 
   if (event.type === "checkout.session.completed") {

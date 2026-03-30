@@ -10,15 +10,19 @@ export function ProductCard({ product }: ProductCardProps) {
     <Link href={`/product/${product.id}`}>
       <div className="group relative cursor-crosshair overflow-hidden block">
         <div className="aspect-[3/4] bg-[#f5f5f5] relative">
-          <img 
-            src={product.imageUrl} 
+          {/* PERF3 FIX: loading="lazy" defers off-screen images, reducing initial load time
+              and preventing layout shift for products below the fold. */}
+          <img
+            src={product.imageUrl}
             alt={product.name}
+            loading="lazy"
             className="absolute inset-0 w-full h-full object-cover"
           />
           {product.additionalImages?.[0] && (
-            <img 
-              src={product.additionalImages[0]} 
+            <img
+              src={product.additionalImages[0]}
               alt={`${product.name} alternate view`}
+              loading="lazy"
               className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700 ease-in-out group-hover:opacity-100"
             />
           )}
